@@ -1,0 +1,20 @@
+laravel: '@testbench'
+
+providers:
+  - Whilesmart\Agents\AgentsServiceProvider
+
+workbench:
+  start: '/'
+  install: true
+  health: false
+  discovers:
+    web: true
+    api: true
+    commands: true
+    components: false
+    factories: true
+    views: false
+  build:
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh
