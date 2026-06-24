@@ -26,9 +26,13 @@ class AgentManager
         return $this->harnesses->get($name);
     }
 
-    public function run(string $harness, string $input, ToolContext $context): AgentResult
+    /**
+     * @param  array<int, mixed>  $images  Engine-ready media for multimodal input. Empty for text-only.
+     * @param  array<string, mixed>  $overrides  Per-run overrides: provider, model, temperature, maxSteps, maxTokens.
+     */
+    public function run(string $harness, string $input, ToolContext $context, array $images = [], array $overrides = []): AgentResult
     {
-        return $this->harness($harness)->run($input, $context);
+        return $this->harness($harness)->run($input, $context, $images, $overrides);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Whilesmart\Agents\Engines\Prism;
 
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Text\Response;
+use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\ToolCall;
 use Whilesmart\Agents\Contracts\AgentEngine;
 use Whilesmart\Agents\Contracts\Tool;
@@ -29,8 +30,22 @@ class PrismEngine implements AgentEngine
         $text = Prism::text()
             ->using($request->provider, $request->model)
             ->withSystemPrompt($request->systemPrompt)
-            ->withPrompt($request->input)
             ->withMaxSteps($request->maxSteps);
+
+        // Multimodal input (e.g. brand logos, user attachments) must travel as a
+        // UserMessage with media; withPrompt() is text-only and would drop images.
+        $text = $request->images !== []
+            ? $text->withMessages([new UserMessage($request->input, $request->images)])
+            : $text->withPrompt($request->input);
+
+        if ($request->maxTokens !== null) {
+            $text = $text->withMaxTokens($request->maxTokens);
+        }
+
+        $requestTimeout = (int) config('agents.request_timeout', 0);
+        if ($requestTimeout > 0) {
+            $text = $text->withClientOptions(['timeout' => $requestTimeout]);
+        }
 
         if ($request->temperature !== null) {
             $text = $text->usingTemperature($request->temperature);

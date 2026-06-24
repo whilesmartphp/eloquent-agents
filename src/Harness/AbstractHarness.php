@@ -60,17 +60,19 @@ abstract class AbstractHarness implements Harness
         return null;
     }
 
-    public function run(string $input, ToolContext $context): AgentResult
+    public function run(string $input, ToolContext $context, array $images = [], array $overrides = []): AgentResult
     {
         return $this->engine->run(new AgentRequest(
             systemPrompt: $this->systemPrompt(),
             input: $input,
             tools: $this->resolveTools(),
             context: $context,
-            provider: $this->provider() ?? config('agents.provider'),
-            model: $this->model() ?? config('agents.model'),
-            temperature: $this->temperature() ?? (float) config('agents.temperature'),
-            maxSteps: $this->resolveMaxSteps(),
+            provider: $overrides['provider'] ?? $this->provider() ?? config('agents.provider'),
+            model: $overrides['model'] ?? $this->model() ?? config('agents.model'),
+            temperature: $overrides['temperature'] ?? $this->temperature() ?? (float) config('agents.temperature'),
+            maxSteps: $this->resolveMaxSteps($overrides['maxSteps'] ?? null),
+            images: $images,
+            maxTokens: $overrides['maxTokens'] ?? config('agents.max_tokens'),
         ));
     }
 
@@ -102,10 +104,10 @@ abstract class AbstractHarness implements Harness
         return $tools;
     }
 
-    protected function resolveMaxSteps(): int
+    protected function resolveMaxSteps(?int $requested = null): int
     {
         $cap = (int) config('agents.max_steps', 8);
-        $requested = $this->maxSteps() ?? $cap;
+        $requested = $requested ?? $this->maxSteps() ?? $cap;
 
         return max(1, min($requested, $cap));
     }
