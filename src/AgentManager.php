@@ -27,12 +27,12 @@ class AgentManager
     }
 
     /**
-     * @param  array<int, mixed>  $images  Engine-ready media for multimodal input. Empty for text-only.
+     * @param  array<int, mixed>  $media  Engine-ready media for multimodal input. Empty for text-only.
      * @param  array<string, mixed>  $overrides  Per-run overrides: provider, model, temperature, maxSteps, maxTokens.
      */
-    public function run(string $harness, string $input, ToolContext $context, array $images = [], array $overrides = []): AgentResult
+    public function run(string $harness, string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
-        return $this->harness($harness)->run($input, $context, $images, $overrides);
+        return $this->harness($harness)->run($input, $context, $media, $overrides);
     }
 
     /**

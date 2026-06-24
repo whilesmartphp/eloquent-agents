@@ -60,7 +60,7 @@ abstract class AbstractHarness implements Harness
         return null;
     }
 
-    public function run(string $input, ToolContext $context, array $images = [], array $overrides = []): AgentResult
+    public function run(string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
         return $this->engine->run(new AgentRequest(
             systemPrompt: $this->systemPrompt(),
@@ -71,7 +71,7 @@ abstract class AbstractHarness implements Harness
             model: $overrides['model'] ?? $this->model() ?? config('agents.model'),
             temperature: $overrides['temperature'] ?? $this->temperature() ?? (float) config('agents.temperature'),
             maxSteps: $this->resolveMaxSteps($overrides['maxSteps'] ?? null),
-            images: $images,
+            media: $media,
             maxTokens: $overrides['maxTokens'] ?? config('agents.max_tokens'),
         ));
     }

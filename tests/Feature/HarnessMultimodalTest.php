@@ -13,7 +13,7 @@ use Whilesmart\Agents\ValueObjects\ToolContext;
 
 class HarnessMultimodalTest extends TestCase
 {
-    public function test_run_accepts_images_and_per_run_overrides(): void
+    public function test_run_accepts_media_and_per_run_overrides(): void
     {
         Prism::fake([
             TextResponseFake::make()
@@ -34,7 +34,7 @@ class HarnessMultimodalTest extends TestCase
         $this->assertSame('described', $result->text);
     }
 
-    public function test_run_stays_text_only_when_no_images(): void
+    public function test_run_stays_text_only_when_no_media(): void
     {
         Prism::fake([
             TextResponseFake::make()->withText('ok')->withUsage(new Usage(1, 1)),

@@ -32,10 +32,10 @@ class PrismEngine implements AgentEngine
             ->withSystemPrompt($request->systemPrompt)
             ->withMaxSteps($request->maxSteps);
 
-        // Multimodal input (e.g. brand logos, user attachments) must travel as a
-        // UserMessage with media; withPrompt() is text-only and would drop images.
-        $text = $request->images !== []
-            ? $text->withMessages([new UserMessage($request->input, $request->images)])
+        // Multimodal input (images, documents, audio, video) must travel as a
+        // UserMessage with media; withPrompt() is text-only and would drop it.
+        $text = $request->media !== []
+            ? $text->withMessages([new UserMessage($request->input, $request->media)])
             : $text->withPrompt($request->input);
 
         if ($request->maxTokens !== null) {
