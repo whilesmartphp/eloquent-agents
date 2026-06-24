@@ -12,6 +12,7 @@ final readonly class AgentRequest
 {
     /**
      * @param  array<int, Tool>  $tools
+     * @param  array<int, mixed>  $media  Engine-ready media for multimodal input (Prism Image/Document/Audio/Video value objects for PrismEngine). Empty for text-only runs.
      */
     public function __construct(
         public string $systemPrompt,
@@ -22,5 +23,7 @@ final readonly class AgentRequest
         public ?string $model,
         public ?float $temperature,
         public int $maxSteps,
+        public array $media = [],
+        public ?int $maxTokens = null,
     ) {}
 }

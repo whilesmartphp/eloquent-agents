@@ -34,5 +34,9 @@ interface Harness
 
     public function maxSteps(): ?int;
 
-    public function run(string $input, ToolContext $context): AgentResult;
+    /**
+     * @param  array<int, mixed>  $media  Engine-ready media for multimodal input. Empty for text-only.
+     * @param  array<string, mixed>  $overrides  Per-run overrides: provider, model, temperature, maxSteps, maxTokens.
+     */
+    public function run(string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult;
 }

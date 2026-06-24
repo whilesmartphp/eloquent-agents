@@ -30,6 +30,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Per-call output cap and HTTP timeout
+    |--------------------------------------------------------------------------
+    |
+    | max_tokens bounds a single response so large outputs are not truncated
+    | mid-stream (which some providers surface as an unhandled finish reason);
+    | null leaves the provider default. request_timeout (seconds) caps a single
+    | provider HTTP call so a hung request fails fast instead of blocking the
+    | caller; 0 disables it.
+    |
+    */
+    'max_tokens' => env('AGENTS_MAX_TOKENS') !== null ? (int) env('AGENTS_MAX_TOKENS') : null,
+    'request_timeout' => (int) env('AGENTS_REQUEST_TIMEOUT', 0),
+
+    /*
+    |--------------------------------------------------------------------------
     | Routes
     |--------------------------------------------------------------------------
     */
