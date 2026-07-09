@@ -3,7 +3,8 @@
 namespace Whilesmart\Agents\Harness;
 
 use Whilesmart\Agents\Contracts\AgentEngine;
-use Whilesmart\Agents\Contracts\Harness;
+use Whilesmart\Agents\Contracts\StreamingAgentEngine;
+use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Enums\ToolPermission;
@@ -11,7 +12,7 @@ use Whilesmart\Agents\ValueObjects\AgentRequest;
 use Whilesmart\Agents\ValueObjects\AgentResult;
 use Whilesmart\Agents\ValueObjects\ToolContext;
 
-abstract class AbstractHarness implements Harness
+abstract class AbstractHarness implements StreamingHarness
 {
     protected AgentEngine $engine;
 
@@ -62,7 +63,29 @@ abstract class AbstractHarness implements Harness
 
     public function run(string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
-        return $this->engine->run(new AgentRequest(
+        return $this->engine->run($this->buildRequest($input, $context, $media, $overrides));
+    }
+
+    public function stream(string $input, ToolContext $context, callable $onEvent, array $media = [], array $overrides = []): AgentResult
+    {
+        $request = $this->buildRequest($input, $context, $media, $overrides);
+
+        // Fall back to a buffered run when the engine cannot stream, so callers
+        // can always reach for stream() regardless of the configured engine.
+        if (! $this->engine instanceof StreamingAgentEngine) {
+            return $this->engine->run($request);
+        }
+
+        return $this->engine->stream($request, $onEvent);
+    }
+
+    /**
+     * @param  array<int, mixed>  $media
+     * @param  array<string, mixed>  $overrides
+     */
+    protected function buildRequest(string $input, ToolContext $context, array $media, array $overrides): AgentRequest
+    {
+        return new AgentRequest(
             systemPrompt: $this->systemPrompt(),
             input: $input,
             tools: $this->resolveTools(),
@@ -73,7 +96,7 @@ abstract class AbstractHarness implements Harness
             maxSteps: $this->resolveMaxSteps($overrides['maxSteps'] ?? null),
             media: $media,
             maxTokens: $overrides['maxTokens'] ?? config('agents.max_tokens'),
-        ));
+        );
     }
 
     /**

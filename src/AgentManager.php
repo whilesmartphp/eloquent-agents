@@ -4,6 +4,7 @@ namespace Whilesmart\Agents;
 
 use Closure;
 use Whilesmart\Agents\Contracts\Harness;
+use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
@@ -33,6 +34,25 @@ class AgentManager
     public function run(string $harness, string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
         return $this->harness($harness)->run($input, $context, $media, $overrides);
+    }
+
+    /**
+     * Run a harness while forwarding progress to $onEvent. Harnesses that cannot
+     * stream fall back to a buffered run, emitting no events.
+     *
+     * @param  callable(\Whilesmart\Agents\ValueObjects\AgentStreamEvent):void  $onEvent
+     * @param  array<int, mixed>  $media  Engine-ready media for multimodal input. Empty for text-only.
+     * @param  array<string, mixed>  $overrides  Per-run overrides: provider, model, temperature, maxSteps, maxTokens.
+     */
+    public function stream(string $harness, string $input, ToolContext $context, callable $onEvent, array $media = [], array $overrides = []): AgentResult
+    {
+        $resolved = $this->harness($harness);
+
+        if (! $resolved instanceof StreamingHarness) {
+            return $resolved->run($input, $context, $media, $overrides);
+        }
+
+        return $resolved->stream($input, $context, $onEvent, $media, $overrides);
     }
 
     /**
