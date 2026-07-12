@@ -28,8 +28,8 @@ ANTHROPIC_API_KEY=
 # OpenAI
 OPENAI_API_KEY=
 
-# Groq
-GROQ_API_KEY=
+# xAI (Grok)
+XAI_API_KEY=
 ```
 
 ### Default Model
