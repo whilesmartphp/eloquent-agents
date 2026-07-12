@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/whilesmart/docs-kit/main/schema/docs.schema.json",
+  "name": "Eloquent Agents",
+  "description": "AI tool-calling foundation for Laravel: ready-made tools, an agent harness system, and an extension API on top of Prism",
+  "icon": "sparkles",
+  "category": {
+    "language": "php",
+    "framework": "laravel"
+  },
+  "sidebar": [
+    { "title": "Installation", "path": "docs/installation.md" },
+    { "title": "Quick Start", "path": "docs/quick-start.md" },
+    { "title": "Harnesses", "path": "docs/harnesses.md" },
+    { "title": "Built-in Tools", "path": "docs/built-in-tools.md" },
+    { "title": "Custom Tools", "path": "docs/custom-tools.md" },
+    { "title": "Security Model", "path": "docs/security.md" },
+    { "title": "Engine Abstraction", "path": "docs/engine-abstraction.md" },
+    { "title": "MCP Support", "path": "docs/mcp.md" },
+    { "title": "Console Commands", "path": "docs/console.md" },
+    { "title": "Prompts", "path": "docs/prompts.md" }
+  ]
+}
