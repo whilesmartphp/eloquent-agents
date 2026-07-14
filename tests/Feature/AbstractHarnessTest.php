@@ -32,6 +32,60 @@ class AbstractHarnessTest extends TestCase
         $this->assertSame(7, $result->usage['completion_tokens']);
     }
 
+    public function test_system_prompt_receives_the_run_context(): void
+    {
+        Prism::fake([TextResponseFake::make()->withText('ok')->withUsage(new Usage(1, 1))]);
+
+        $harness = new class(new ArrayToolResolver) extends AbstractHarness
+        {
+            public ?ToolContext $seen = null;
+
+            public function name(): string
+            {
+                return 'ctx';
+            }
+
+            public function systemPrompt(?ToolContext $context = null): string
+            {
+                $this->seen = $context;
+
+                return 'grounded';
+            }
+        };
+
+        $context = ToolContext::guest();
+        $harness->run('hi', $context);
+
+        $this->assertSame($context, $harness->seen);
+    }
+
+    public function test_streaming_system_prompt_receives_the_run_context(): void
+    {
+        Prism::fake([TextResponseFake::make()->withText('ok')->withUsage(new Usage(1, 1))]);
+
+        $harness = new class(new ArrayToolResolver) extends AbstractHarness
+        {
+            public ?ToolContext $seen = null;
+
+            public function name(): string
+            {
+                return 'ctx-stream';
+            }
+
+            public function systemPrompt(?ToolContext $context = null): string
+            {
+                $this->seen = $context;
+
+                return 'grounded';
+            }
+        };
+
+        $context = ToolContext::guest();
+        $harness->stream('hi', $context, fn () => null);
+
+        $this->assertSame($context, $harness->seen);
+    }
+
     public function test_max_steps_is_capped_by_config(): void
     {
         config()->set('agents.max_steps', 3);
@@ -43,7 +97,7 @@ class AbstractHarnessTest extends TestCase
                 return 't';
             }
 
-            public function systemPrompt(): string
+            public function systemPrompt(?ToolContext $context = null): string
             {
                 return 'x';
             }

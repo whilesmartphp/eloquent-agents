@@ -23,7 +23,7 @@ abstract class AbstractHarness implements StreamingHarness
 
     abstract public function name(): string;
 
-    abstract public function systemPrompt(): string;
+    abstract public function systemPrompt(?ToolContext $context = null): string;
 
     /**
      * @return array<int, string>
@@ -86,7 +86,7 @@ abstract class AbstractHarness implements StreamingHarness
     protected function buildRequest(string $input, ToolContext $context, array $media, array $overrides): AgentRequest
     {
         return new AgentRequest(
-            systemPrompt: $this->systemPrompt(),
+            systemPrompt: $this->systemPrompt($context),
             input: $input,
             tools: $this->resolveTools(),
             context: $context,

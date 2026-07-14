@@ -10,7 +10,13 @@ interface Harness
 {
     public function name(): string;
 
-    public function systemPrompt(): string;
+    /**
+     * The system prompt for a run. The context carries the user the run is for,
+     * so a harness can ground the prompt in who is asking (their defaults,
+     * locale, currency) instead of leaving the model to guess. Null when a
+     * prompt is needed outside a run, e.g. when listing harnesses.
+     */
+    public function systemPrompt(?ToolContext $context = null): string;
 
     /**
      * Names of tools this harness exposes to the model.
