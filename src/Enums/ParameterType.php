@@ -9,4 +9,5 @@ enum ParameterType: string
     case BOOLEAN = 'boolean';
     case ENUM = 'enum';
     case ARRAY = 'array';
+    case OBJECT = 'object';
 }
