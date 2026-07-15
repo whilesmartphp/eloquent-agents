@@ -117,6 +117,23 @@ class CreateReminderTool extends AbstractTool
 Register it by config (`'tools' => [CreateReminderTool::class]`), at runtime
 (`Agents::registerTool(new CreateReminderTool)`), or enable auto-discovery of `App\Ai\Tools`.
 
+### Parameter shapes
+
+`ParameterSpec` covers scalars (`string`, `number`, `boolean`), `enum`, and lists
+(`arrayOf`). For structured input, `object` and `arrayOfObject` take nested specs:
+
+```php
+ParameterSpec::arrayOfObject('assignments', 'One entry per transaction.', [
+    ParameterSpec::number('transaction_id', 'The transaction id'),
+    ParameterSpec::string('category_name', 'Category to apply'),
+    ParameterSpec::string('note', 'Optional note', required: false),
+]);
+```
+
+A nested spec marked `required: false` is omitted from the item's required
+fields. Reach for `arrayOfObject` when a tool acts on many records in one call:
+it keeps related values in one item, where parallel lists can arrive misaligned.
+
 ## Harness as a class
 
 When config arrays are not enough, extend `AbstractHarness`:

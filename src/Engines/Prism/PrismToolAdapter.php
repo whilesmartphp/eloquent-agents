@@ -2,8 +2,12 @@
 
 namespace Whilesmart\Agents\Engines\Prism;
 
+use Prism\Prism\Contracts\Schema;
+use Prism\Prism\Schema\ArraySchema;
 use Prism\Prism\Schema\BooleanSchema;
+use Prism\Prism\Schema\EnumSchema;
 use Prism\Prism\Schema\NumberSchema;
+use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 use Prism\Prism\Tool as PrismTool;
 use Whilesmart\Agents\Contracts\Tool;
@@ -53,16 +57,67 @@ class PrismToolAdapter
             ParameterType::NUMBER => $prismTool->withNumberParameter($parameter->name, $parameter->description, $parameter->required),
             ParameterType::BOOLEAN => $prismTool->withBooleanParameter($parameter->name, $parameter->description, $parameter->required),
             ParameterType::ENUM => $prismTool->withEnumParameter($parameter->name, $parameter->description, $parameter->options, $parameter->required),
-            ParameterType::ARRAY => $prismTool->withArrayParameter($parameter->name, $parameter->description, $this->itemsSchema($parameter->itemType), $parameter->required),
+            ParameterType::ARRAY => $prismTool->withArrayParameter($parameter->name, $parameter->description, $this->itemsSchema($parameter), $parameter->required),
+            ParameterType::OBJECT => $prismTool->withObjectParameter(
+                $parameter->name,
+                $parameter->description,
+                $this->propertySchemas($parameter->properties),
+                $this->requiredNames($parameter->properties),
+                required: $parameter->required,
+            ),
         };
     }
 
-    protected function itemsSchema(ParameterType $itemType): StringSchema|NumberSchema|BooleanSchema
+    protected function itemsSchema(ParameterSpec $parameter): Schema
     {
-        return match ($itemType) {
+        return match ($parameter->itemType) {
             ParameterType::NUMBER => new NumberSchema('item', 'A list item'),
             ParameterType::BOOLEAN => new BooleanSchema('item', 'A list item'),
+            ParameterType::OBJECT => new ObjectSchema(
+                'item',
+                'A list item',
+                $this->propertySchemas($parameter->properties),
+                $this->requiredNames($parameter->properties),
+            ),
             default => new StringSchema('item', 'A list item'),
+        };
+    }
+
+    /**
+     * @param  array<int, ParameterSpec>  $properties
+     * @return array<int, Schema>
+     */
+    protected function propertySchemas(array $properties): array
+    {
+        return array_map(fn (ParameterSpec $p): Schema => $this->schemaFor($p), $properties);
+    }
+
+    /**
+     * @param  array<int, ParameterSpec>  $properties
+     * @return array<int, string>
+     */
+    protected function requiredNames(array $properties): array
+    {
+        return array_values(array_map(
+            fn (ParameterSpec $p): string => $p->name,
+            array_filter($properties, fn (ParameterSpec $p): bool => $p->required),
+        ));
+    }
+
+    protected function schemaFor(ParameterSpec $parameter): Schema
+    {
+        return match ($parameter->type) {
+            ParameterType::NUMBER => new NumberSchema($parameter->name, $parameter->description),
+            ParameterType::BOOLEAN => new BooleanSchema($parameter->name, $parameter->description),
+            ParameterType::ENUM => new EnumSchema($parameter->name, $parameter->description, $parameter->options),
+            ParameterType::ARRAY => new ArraySchema($parameter->name, $parameter->description, $this->itemsSchema($parameter)),
+            ParameterType::OBJECT => new ObjectSchema(
+                $parameter->name,
+                $parameter->description,
+                $this->propertySchemas($parameter->properties),
+                $this->requiredNames($parameter->properties),
+            ),
+            default => new StringSchema($parameter->name, $parameter->description),
         };
     }
 
