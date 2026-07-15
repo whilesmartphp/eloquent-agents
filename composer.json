@@ -3,7 +3,7 @@
   "description": "AI tool-calling foundation for Laravel: ready-made tools, an agent harness, and an extension API on top of Prism",
   "type": "library",
   "license": "MIT",
-  "package-version": "0.1.0",
+  "version": "1.0.0",
   "authors": [
     {
       "name": "WhileSmart",
