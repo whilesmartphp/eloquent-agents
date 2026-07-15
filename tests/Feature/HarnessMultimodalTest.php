@@ -55,7 +55,7 @@ class HarnessMultimodalTest extends TestCase
                 return 'multimodal-test';
             }
 
-            public function systemPrompt(): string
+            public function systemPrompt(?ToolContext $context = null): string
             {
                 return 'You describe images.';
             }

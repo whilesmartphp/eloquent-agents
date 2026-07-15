@@ -5,6 +5,7 @@ namespace Whilesmart\Agents\Harness;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Enums\ToolPermission;
 use Whilesmart\Agents\Prompts\PromptRegistry;
+use Whilesmart\Agents\ValueObjects\ToolContext;
 
 /**
  * A harness defined entirely by a config array, so apps add agents without
@@ -30,7 +31,7 @@ class GenericHarness extends AbstractHarness
         return $this->harnessName;
     }
 
-    public function systemPrompt(): string
+    public function systemPrompt(?ToolContext $context = null): string
     {
         return $this->prompts->resolve((string) ($this->config['prompt'] ?? ''));
     }

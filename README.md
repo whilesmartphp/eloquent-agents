@@ -134,6 +134,24 @@ A nested spec marked `required: false` is omitted from the item's required
 fields. Reach for `arrayOfObject` when a tool acts on many records in one call:
 it keeps related values in one item, where parallel lists can arrive misaligned.
 
+### Grounding the prompt in the user
+
+`systemPrompt()` receives the run's `ToolContext`, so the prompt can state facts
+about who is asking rather than leaving the model to guess them:
+
+```php
+public function systemPrompt(?ToolContext $context = null): string
+{
+    $currency = $context?->user?->getConfigValue('default-currency') ?? 'unknown';
+
+    return "Report every amount in {$currency}.";
+}
+```
+
+The context is null when a prompt is built outside a run (listing harnesses, for
+example), so always guard with `?->`. Telling the model a fact beats instructing
+it to honour one it was never given.
+
 ## Harness as a class
 
 When config arrays are not enough, extend `AbstractHarness`:

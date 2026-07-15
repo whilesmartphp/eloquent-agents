@@ -3,6 +3,7 @@
 namespace Tests\Fixtures;
 
 use Whilesmart\Agents\Harness\AbstractHarness;
+use Whilesmart\Agents\ValueObjects\ToolContext;
 
 class EchoHarness extends AbstractHarness
 {
@@ -11,7 +12,7 @@ class EchoHarness extends AbstractHarness
         return 'echo';
     }
 
-    public function systemPrompt(): string
+    public function systemPrompt(?ToolContext $context = null): string
     {
         return 'You echo messages.';
     }
