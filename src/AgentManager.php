@@ -9,6 +9,7 @@ use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
 use Whilesmart\Agents\ValueObjects\AgentResult;
+use Whilesmart\Agents\ValueObjects\AgentStreamEvent;
 use Whilesmart\Agents\ValueObjects\ToolContext;
 
 /**
@@ -40,7 +41,7 @@ class AgentManager
      * Run a harness while forwarding progress to $onEvent. Harnesses that cannot
      * stream fall back to a buffered run, emitting no events.
      *
-     * @param  callable(\Whilesmart\Agents\ValueObjects\AgentStreamEvent):void  $onEvent
+     * @param  callable(AgentStreamEvent):void  $onEvent
      * @param  array<int, mixed>  $media  Engine-ready media for multimodal input. Empty for text-only.
      * @param  array<string, mixed>  $overrides  Per-run overrides: provider, model, temperature, maxSteps, maxTokens.
      */
