@@ -9,7 +9,10 @@ use Whilesmart\Agents\Engines\Prism\PrismEngine;
 use Whilesmart\Agents\Engines\Prism\PrismToolAdapter;
 use Whilesmart\Agents\Prompts\PromptRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
+use Whilesmart\Agents\Registries\ModelResourceRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
+use Whilesmart\Agents\Resources\ResourceScope;
+use Whilesmart\Agents\Tools\ListResourceTool;
 
 class AgentsServiceProvider extends ServiceProvider
 {
@@ -40,6 +43,8 @@ class AgentsServiceProvider extends ServiceProvider
         $this->app->singleton(ToolRegistry::class);
         $this->app->bind(ToolResolver::class, fn ($app) => $app->make(ToolRegistry::class));
         $this->app->singleton(PromptRegistry::class);
+        $this->app->singleton(ModelResourceRegistry::class);
+        $this->app->singleton(ResourceScope::class);
 
         $this->app->singleton(HarnessRegistry::class, fn ($app) => new HarnessRegistry(
             $app->make(ToolResolver::class),
@@ -55,6 +60,7 @@ class AgentsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerConfiguredResources();
         $this->registerConfiguredTools();
         $this->registerConfiguredHarnesses();
 
@@ -71,7 +77,30 @@ class AgentsServiceProvider extends ServiceProvider
                 Console\ListToolsCommand::class,
                 Console\ListHarnessesCommand::class,
                 Console\RunHarnessCommand::class,
+                Console\ExportSchemaCommand::class,
             ]);
+        }
+    }
+
+    /**
+     * Turn each configured model resource into a read tool. Registration happens
+     * before the configured tool list so an app can still override a generated
+     * tool by registering its own under the same name.
+     */
+    protected function registerConfiguredResources(): void
+    {
+        /** @var ModelResourceRegistry $resources */
+        $resources = $this->app->make(ModelResourceRegistry::class);
+        $resources->registerMany((array) config('agents.resources.models', []));
+
+        /** @var ToolRegistry $tools */
+        $tools = $this->app->make(ToolRegistry::class);
+        $scope = $this->app->make(ResourceScope::class);
+
+        foreach ($resources->all() as $resource) {
+            if ($resource->readTool) {
+                $tools->register(new ListResourceTool($resource, $scope));
+            }
         }
     }
 

@@ -69,6 +69,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Model resources
+    |--------------------------------------------------------------------------
+    |
+    | Models that describe themselves to agents. Each must implement
+    | Whilesmart\Agents\Contracts\HasAgentResource. Every entry gains a
+    | list_<resource> read tool scoped to the acting user, and appears in the
+    | schema emitted by `php artisan agents:export-schema`. A model absent from
+    | this list is invisible to agents no matter what it declares.
+    |
+    */
+    'resources' => [
+        'models' => [
+            // App\Models\Transfer::class,
+        ],
+        'max_rows' => (int) env('AGENTS_RESOURCE_MAX_ROWS', 50),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Auto-discovery
     |--------------------------------------------------------------------------
     |
