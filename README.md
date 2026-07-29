@@ -11,6 +11,8 @@ API** so your app registers its own tools, agents ("harnesses"), and prompts.
 - **Harnesses.** A harness is a named agent: a system prompt + a tool set + a model + a step budget. Define
   one in a config array or a class.
 - **Bring your own tools.** Implement one method, register the class, and the model can call it.
+- **Model resources.** Describe a model once and get an owner-scoped read tool, write-tool field definitions,
+  and an exportable semantic-layer schema from the same declaration.
 - **Default-deny security.** Every tool runs against a `ToolContext` (the acting user). Data tools enforce an
   allowlist of models and columns and scope every row to that user.
 - **MCP ready.** Adopt any Prism tool, including MCP server tools, through the registry.
@@ -152,6 +154,73 @@ The context is null when a prompt is built outside a run (listing harnesses, for
 example), so always guard with `?->`. Telling the model a fact beats instructing
 it to honour one it was never given.
 
+## Model resources
+
+Describing a model to an agent means writing the same thing three times: a read tool, the columns a write
+tool accepts, and a schema for whatever answers natural-language questions. Those three drift apart. A model
+resource is that description written once.
+
+Implement `HasAgentResource` on the model:
+
+```php
+use Whilesmart\Agents\Contracts\HasAgentResource;
+use Whilesmart\Agents\Resources\AgentResource;
+use Whilesmart\Agents\Resources\ResourceField;
+
+class Transfer extends Model implements HasAgentResource
+{
+    public static function agentResource(): AgentResource
+    {
+        return new AgentResource(
+            name: 'transfers',
+            model: self::class,
+            table: 'transfers',
+            description: 'Money moved between the user\'s own wallets.',
+            labelColumn: 'note',
+            ownerKey: 'user_id',
+            readable: [
+                ResourceField::key(),
+                ResourceField::decimal('amount', 'Amount transferred'),
+                ResourceField::reference('source_wallet_id', 'wallets.id', 'Wallet money left'),
+                ResourceField::internal('user_id'),
+                ResourceField::datetime('created_at'),
+            ],
+        );
+    }
+}
+```
+
+List it in `config('agents.resources.models')` and it gains a `list_transfers` tool scoped to the acting
+user, returning only the fields not marked internal. A model absent from that list is invisible to agents no
+matter what it declares.
+
+### Ownership
+
+How rows are tied to a user is declarative, and everything fails closed: a resource that is neither `global`
+nor scoped returns nothing rather than everyone's rows.
+
+| Declaration | Use for |
+|---|---|
+| `ownerKey: 'user_id'` | The ordinary case: a column holding the owner |
+| `ownerConstants: ['owner_type' => User::class]` | Polymorphic owners, where the id alone is ambiguous |
+| `ownerParam: 'user_id'` | The owner column is named something else in the query layer |
+| `scopeThrough: new ThroughScope(...)` | No owner column; the parent record owns it |
+| `ownerRelation: 'transfers'` | Scoping the read tool through a relation on the user model |
+| `global: true` | Reference data belonging to nobody |
+
+`ThroughScope` names the relation reaching the parent and the parent resource, which supplies the real
+scoping. Chains resolve recursively, so a comment on a note owned by a user scopes correctly through both.
+
+### Exporting a schema
+
+```bash
+php artisan agents:export-schema --format=smartql --output=smartql.yml
+```
+
+The output is entities, relationships, and the security rules that follow from ownership: a fragment meant
+to be merged into a target file that keeps its own connection details and prompts. Regenerating it is how the
+query layer stays in step with the models rather than being maintained by hand alongside them.
+
 ## Harness as a class
 
 When config arrays are not enough, extend `AbstractHarness`:
@@ -213,6 +282,7 @@ Nothing else changes: tools, harnesses, registries, and the facade are untouched
 php artisan agents:tools        # list registered tools
 php artisan agents:harnesses    # list registered harnesses
 php artisan agents:run finance "how much did I spend last month?" --user=1
+php artisan agents:export-schema --output=smartql.yml   # semantic layer from the model resources
 ```
 
 ## Security model
