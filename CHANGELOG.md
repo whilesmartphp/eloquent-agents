@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0] - 2026-07-29
+- A model can describe itself to agents once, and that single declaration drives its read tool, the fields a write tool accepts, and an exportable semantic-layer schema. Previously each of the three was maintained by hand, and they drifted apart silently.
+- Ownership is declared rather than reimplemented per tool, covering a polymorphic owner that needs its type pinned and a record owned only through its parent. Every path fails closed: a model that is neither owned nor explicitly global returns nothing rather than everyone's rows, and a model absent from the configured list stays invisible however it describes itself.
+- `agents:export-schema` writes a semantic layer derived from those declarations, so a natural-language query layer stays in step with the models instead of being maintained beside them.
+- Reads can be left to an existing hand-written tool, which keeps the schema and scoping benefits without a second tool competing for the same name.
+
 ## [1.0.0] - 2026-07-15
 - First tagged release. Everything below this entry only ever shipped as a branch, so this is the first version anything can depend on.
 - Tool parameters can now be objects and lists of objects, built from nested specs. A tool acting on many records in one call carries one entry per record, instead of spreading each record's values across parallel lists that can arrive misaligned.
