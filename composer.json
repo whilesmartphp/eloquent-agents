@@ -3,7 +3,7 @@
   "description": "AI tool-calling foundation for Laravel: ready-made tools, an agent harness, and an extension API on top of Prism",
   "type": "library",
   "license": "MIT",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "authors": [
     {
       "name": "WhileSmart",
@@ -46,6 +46,9 @@
     "pint:test": "./vendor/bin/pint --test"
   },
   "config": {
+    "platform": {
+      "php": "8.2"
+    },
     "sort-packages": true
   },
   "minimum-stability": "stable",

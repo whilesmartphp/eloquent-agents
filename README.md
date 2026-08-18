@@ -57,6 +57,10 @@ $result->toolCalls;  // what it called
 $result->usage;      // token usage
 ```
 
+Every buffered or streamed run through `AbstractHarness` dispatches an
+`AgentRunCompleted` event with the harness name, resolved request, and result.
+Metrics packages can observe runs without depending on Prism types.
+
 ## Built-in tools
 
 | Name | Permission | What it does |

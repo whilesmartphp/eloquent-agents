@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.0] - 2026-08-18
+
+- Buffered and streamed harness runs publish a provider-neutral completion event with the resolved request and result, allowing metrics integrations to observe usage without depending on Prism.
+
 ## [1.1.0] - 2026-07-29
 - A model can describe itself to agents once, and that single declaration drives its read tool, the fields a write tool accepts, and an exportable semantic-layer schema. Previously each of the three was maintained by hand, and they drifted apart silently.
 - Ownership is declared rather than reimplemented per tool, covering a polymorphic owner that needs its type pinned and a record owned only through its parent. Every path fails closed: a model that is neither owned nor explicitly global returns nothing rather than everyone's rows, and a model absent from the configured list stays invisible however it describes itself.
