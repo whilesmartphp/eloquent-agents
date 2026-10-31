@@ -8,6 +8,7 @@ use Prism\Prism\Schema\BooleanSchema;
 use Prism\Prism\Schema\EnumSchema;
 use Prism\Prism\Schema\NumberSchema;
 use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\RawSchema;
 use Prism\Prism\Schema\StringSchema;
 use Prism\Prism\Tool as PrismTool;
 use Whilesmart\Agents\Contracts\Tool;
@@ -65,6 +66,7 @@ class PrismToolAdapter
                 $this->requiredNames($parameter->properties),
                 required: $parameter->required,
             ),
+            ParameterType::SCHEMA => $prismTool->withParameter(new RawSchema($parameter->name, $parameter->schema), $parameter->required),
         };
     }
 
@@ -117,6 +119,7 @@ class PrismToolAdapter
                 $this->propertySchemas($parameter->properties),
                 $this->requiredNames($parameter->properties),
             ),
+            ParameterType::SCHEMA => new RawSchema($parameter->name, $parameter->schema),
             default => new StringSchema($parameter->name, $parameter->description),
         };
     }

@@ -13,6 +13,7 @@ final readonly class ParameterSpec
     /**
      * @param  array<int, string|int|float>  $options
      * @param  array<int, self>  $properties  Nested specs describing an OBJECT's fields.
+     * @param  array<string, mixed>  $schema  A JSON schema used verbatim by a SCHEMA parameter.
      */
     public function __construct(
         public string $name,
@@ -22,6 +23,7 @@ final readonly class ParameterSpec
         public array $options = [],
         public ParameterType $itemType = ParameterType::STRING,
         public array $properties = [],
+        public array $schema = [],
     ) {}
 
     public static function string(string $name, string $description, bool $required = true): self
@@ -71,5 +73,19 @@ final readonly class ParameterSpec
     public static function arrayOfObject(string $name, string $description, array $properties, bool $required = true): self
     {
         return new self($name, ParameterType::ARRAY, $description, $required, [], ParameterType::OBJECT, $properties);
+    }
+
+    /**
+     * A parameter described by a ready-made JSON schema, for shapes the other
+     * builders cannot express (unions, defaults, bounds). The schema reaches the
+     * model as written.
+     *
+     * @param  array<string, mixed>  $schema
+     */
+    public static function schema(string $name, array $schema, bool $required = true): self
+    {
+        $description = is_string($schema['description'] ?? null) ? $schema['description'] : '';
+
+        return new self($name, ParameterType::SCHEMA, $description, $required, schema: $schema);
     }
 }

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"Error executing tool describe_plan: 'plan-does-not-exist'"}],"isError":true}}

@@ -5,6 +5,8 @@
 - A streamed run now reports what each tool returned, whether it succeeded and why it failed, along with the start of each step and any error the provider raises. Callers can show a tool's outcome as it happens instead of only the fact that it was called.
 - Every recorded tool call carries its result and success alongside its name and arguments, for streamed and buffered runs alike. A tool reports failure by returning an `error` payload. Existing keys are unchanged.
 - Token usage of a streamed run is summed over every usage report in the stream rather than taken from the last one.
+- The tools of a remote MCP server reached over streamable HTTP can be offered to agents with `Agents::registerMcpServer()` or a config entry. Discovery is cached, headers are worked out per call from the run's context, and arguments such as a record id can be bound to the context so the model never chooses them.
+- A tool parameter can be described by a ready-made JSON schema, for shapes the other parameter builders cannot express.
 
 ## [1.2.0] - 2026-08-18
 

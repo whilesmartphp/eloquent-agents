@@ -7,6 +7,7 @@ use Whilesmart\Agents\Contracts\AgentEngine;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Engines\Prism\PrismEngine;
 use Whilesmart\Agents\Engines\Prism\PrismToolAdapter;
+use Whilesmart\Agents\Mcp\McpServer;
 use Whilesmart\Agents\Prompts\PromptRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ModelResourceRegistry;
@@ -62,6 +63,7 @@ class AgentsServiceProvider extends ServiceProvider
     {
         $this->registerConfiguredResources();
         $this->registerConfiguredTools();
+        $this->registerConfiguredMcpServers();
         $this->registerConfiguredHarnesses();
 
         if ($this->app->runningInConsole()) {
@@ -122,6 +124,16 @@ class AgentsServiceProvider extends ServiceProvider
                 (string) config('agents.discovery.namespace'),
                 (string) config('agents.discovery.path'),
             );
+        }
+    }
+
+    protected function registerConfiguredMcpServers(): void
+    {
+        /** @var AgentManager $agents */
+        $agents = $this->app->make('agents');
+
+        foreach ((array) config('agents.mcp.servers', []) as $name => $server) {
+            $agents->registerMcpServer(McpServer::fromConfig((string) $name, (array) $server));
         }
     }
 

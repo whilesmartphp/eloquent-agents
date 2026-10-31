@@ -69,6 +69,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Remote MCP servers
+    |--------------------------------------------------------------------------
+    |
+    | MCP servers reached over streamable HTTP whose tools join the registry
+    | under their own names. Tools are discovered on first use and cached for
+    | cache_ttl seconds (0 disables the cache). Each server takes: url,
+    | headers, bind (argument name => key of the ToolContext scope, filled at
+    | call time and hidden from the model), only (tool names to keep),
+    | cache_ttl, timeout and permission. Agents::registerMcpServer() takes
+    | closures for headers and bind as well.
+    |
+    */
+    'mcp' => [
+        'cache_ttl' => (int) env('AGENTS_MCP_CACHE_TTL', 300),
+        'timeout' => (int) env('AGENTS_MCP_TIMEOUT', 10),
+        'servers' => [
+            // 'planning' => [
+            //     'url' => env('PLANNING_MCP_URL'),
+            //     'headers' => ['Authorization' => 'Bearer '.env('PLANNING_MCP_TOKEN')],
+            //     'bind' => ['plan' => 'plan'],
+            //     'only' => ['describe_plan', 'tell'],
+            // ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Model resources
     |--------------------------------------------------------------------------
     |

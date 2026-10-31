@@ -10,4 +10,5 @@ enum ParameterType: string
     case ENUM = 'enum';
     case ARRAY = 'array';
     case OBJECT = 'object';
+    case SCHEMA = 'schema';
 }

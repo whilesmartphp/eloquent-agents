@@ -6,6 +6,8 @@ use Closure;
 use Whilesmart\Agents\Contracts\Harness;
 use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
+use Whilesmart\Agents\Enums\ToolPermission;
+use Whilesmart\Agents\Mcp\McpServer;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
 use Whilesmart\Agents\ValueObjects\AgentResult;
@@ -69,6 +71,33 @@ class AgentManager
     public function extendTool(string $name, Closure|Tool $tool): static
     {
         $this->tools->extend($name, $tool);
+
+        return $this;
+    }
+
+    /**
+     * Offer the tools of a remote MCP server (streamable HTTP) to harnesses.
+     * Tools are discovered on first use and cached for $cacheTtl seconds.
+     *
+     * @param  array<string, string>|Closure(ToolContext):array<string, string>  $headers
+     * @param  array<string, Closure(ToolContext):mixed|string>  $bind  Arguments filled from the run's context and hidden from the model: a resolver, or a key of the context's scope.
+     * @param  array<int, string>  $only  Tool names to keep. Empty keeps every tool.
+     */
+    public function registerMcpServer(
+        McpServer|string $name,
+        ?string $url = null,
+        array|Closure $headers = [],
+        array $bind = [],
+        array $only = [],
+        ?int $cacheTtl = null,
+        ToolPermission $permission = ToolPermission::EXTERNAL,
+        ?int $timeout = null,
+    ): static {
+        $server = $name instanceof McpServer
+            ? $name
+            : new McpServer($name, (string) $url, $headers, $bind, $only, $cacheTtl, $permission, $timeout);
+
+        $this->tools->source(fn (): array => $server->tools());
 
         return $this;
     }

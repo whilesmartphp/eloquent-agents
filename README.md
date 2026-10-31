@@ -15,7 +15,8 @@ API** so your app registers its own tools, agents ("harnesses"), and prompts.
   and an exportable semantic-layer schema from the same declaration.
 - **Default-deny security.** Every tool runs against a `ToolContext` (the acting user). Data tools enforce an
   allowlist of models and columns and scope every row to that user.
-- **MCP ready.** Adopt any Prism tool, including MCP server tools, through the registry.
+- **MCP ready.** Offer the tools of a remote MCP server to your agents with one call, or adopt any Prism
+  tool, including in-process Laravel MCP tools, through the registry.
 
 ## Installation
 
@@ -126,7 +127,8 @@ Register it by config (`'tools' => [CreateReminderTool::class]`), at runtime
 ### Parameter shapes
 
 `ParameterSpec` covers scalars (`string`, `number`, `boolean`), `enum`, and lists
-(`arrayOf`). For structured input, `object` and `arrayOfObject` take nested specs:
+(`arrayOf`). For structured input, `object` and `arrayOfObject` take nested specs, and
+`schema` takes a JSON schema as it stands:
 
 ```php
 ParameterSpec::arrayOfObject('assignments', 'One entry per transaction.', [
@@ -290,6 +292,50 @@ alike: `name`, `arguments`, `result`, `success` and `error`. A tool reports fail
 Token usage is summed over every usage report the stream carries.
 
 ## MCP tools
+
+### Remote MCP servers
+
+Register an MCP server reached over streamable HTTP and its tools join the registry under their own names,
+ready to list in a harness:
+
+```php
+Agents::registerMcpServer(
+    'planning',
+    'https://engine.example.com/mcp/planning/',
+    headers: fn (ToolContext $context) => ['Authorization' => 'Bearer '.$context->user->engineToken()],
+    bind: ['plan' => fn (ToolContext $context) => $context->get('plan')],
+    only: ['describe_plan', 'tell'],
+);
+```
+
+- Tools are discovered with `tools/list` the first time a lookup needs them, then cached for
+  `agents.mcp.cache_ttl` seconds (300 by default). A server that cannot be reached is reported and its
+  tools are left out until it answers again.
+- Each tool's parameters come from its `inputSchema` as written, so unions, defaults and nested objects
+  reach the model intact.
+- A bound argument is hidden from the model and filled from the run's `ToolContext` on every call, so the
+  model cannot choose it. A string in place of a closure names a key of the context's scope.
+- A call returns the tool's structured content when it has some, and its text otherwise. A tool that
+  reports an error returns `['error' => ...]` with the server's message.
+- Remote tools carry the `external` permission unless you pass another.
+
+The same servers can be declared in config, with static headers and scope keys for bound arguments:
+
+```php
+// config/agents.php
+'mcp' => [
+    'servers' => [
+        'planning' => [
+            'url' => env('PLANNING_MCP_URL'),
+            'headers' => ['Authorization' => 'Bearer '.env('PLANNING_MCP_TOKEN')],
+            'bind' => ['plan' => 'plan'],
+            'only' => ['describe_plan', 'tell'],
+        ],
+    ],
+],
+```
+
+### Prism and Laravel MCP tools
 
 ```php
 use Prism\Prism\Tools\LaravelMcpTool;
