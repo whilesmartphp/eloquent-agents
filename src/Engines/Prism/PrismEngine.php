@@ -3,15 +3,19 @@
 namespace Whilesmart\Agents\Engines\Prism;
 
 use Prism\Prism\Facades\Prism;
+use Prism\Prism\Streaming\Events\ErrorEvent;
 use Prism\Prism\Streaming\Events\StepFinishEvent;
+use Prism\Prism\Streaming\Events\StepStartEvent;
 use Prism\Prism\Streaming\Events\StreamEndEvent;
 use Prism\Prism\Streaming\Events\TextDeltaEvent;
 use Prism\Prism\Streaming\Events\ThinkingEvent;
 use Prism\Prism\Streaming\Events\ToolCallEvent;
+use Prism\Prism\Streaming\Events\ToolResultEvent;
 use Prism\Prism\Text\PendingRequest;
 use Prism\Prism\Text\Response;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\ToolCall;
+use Prism\Prism\ValueObjects\ToolResult;
 use Whilesmart\Agents\Contracts\StreamingAgentEngine;
 use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\ValueObjects\AgentRequest;
@@ -42,9 +46,11 @@ class PrismEngine implements StreamingAgentEngine
     {
         $text = '';
         $toolCalls = [];
+        $callIndex = [];
         $usage = ['prompt_tokens' => 0, 'completion_tokens' => 0];
         $steps = 0;
         $finishReason = 'stop';
+        $failure = null;
 
         try {
             foreach ($this->buildPendingText($request)->asStream() as $event) {
@@ -54,26 +60,63 @@ class PrismEngine implements StreamingAgentEngine
                 } elseif ($event instanceof ThinkingEvent) {
                     $onEvent(AgentStreamEvent::thinking($event->delta));
                 } elseif ($event instanceof ToolCallEvent) {
-                    $toolCalls[] = ['name' => $event->toolCall->name, 'arguments' => $event->toolCall->arguments()];
-                    $onEvent(AgentStreamEvent::toolCall($event->toolCall->name, $event->toolCall->arguments()));
+                    $call = $event->toolCall;
+                    $callIndex[$call->id] = count($toolCalls);
+                    $toolCalls[] = $this->toolCallOutcome($call->name, $call->arguments());
+                    $onEvent(AgentStreamEvent::toolCall($call->name, $call->arguments(), $call->id));
+                } elseif ($event instanceof ToolResultEvent) {
+                    $toolResult = $event->toolResult;
+                    $outcome = $this->toolCallOutcome(
+                        $toolResult->toolName,
+                        $toolResult->args,
+                        $toolResult->result,
+                        $event->success,
+                        $event->error,
+                    );
+
+                    if (isset($callIndex[$toolResult->toolCallId])) {
+                        $toolCalls[$callIndex[$toolResult->toolCallId]] = $outcome;
+                    } else {
+                        $toolCalls[] = $outcome;
+                    }
+
+                    $onEvent(AgentStreamEvent::toolResult(
+                        $outcome['name'],
+                        $outcome['result'],
+                        (bool) $outcome['success'],
+                        $outcome['error'],
+                        $outcome['arguments'],
+                        $toolResult->toolCallId,
+                    ));
+                } elseif ($event instanceof StepStartEvent) {
+                    $onEvent(AgentStreamEvent::stepStart());
                 } elseif ($event instanceof StepFinishEvent) {
                     $steps++;
                     $onEvent(AgentStreamEvent::stepFinish());
+                } elseif ($event instanceof ErrorEvent) {
+                    $onEvent(AgentStreamEvent::error($event->message, $event->errorType, $event->recoverable));
+
+                    if (! $event->recoverable) {
+                        $failure = $event->message;
+                        break;
+                    }
                 } elseif ($event instanceof StreamEndEvent) {
                     if ($event->usage !== null) {
-                        $usage = [
-                            'prompt_tokens' => $event->usage->promptTokens,
-                            'completion_tokens' => $event->usage->completionTokens,
-                        ];
+                        $usage['prompt_tokens'] += $event->usage->promptTokens;
+                        $usage['completion_tokens'] += $event->usage->completionTokens;
                     }
                     $finishReason = $event->finishReason->value;
                 }
             }
         } catch (\Throwable $e) {
+            $failure = $e->getMessage();
+        }
+
+        if ($failure !== null) {
             // Keep whatever was produced before the stream broke: a partial
             // answer is more useful than discarding the whole turn.
             if (trim($text) === '' && $toolCalls === []) {
-                return AgentResult::failed($e->getMessage());
+                return AgentResult::failed($failure);
             }
 
             $finishReason = 'error';
@@ -131,12 +174,20 @@ class PrismEngine implements StreamingAgentEngine
         $toolCalls = [];
 
         foreach ($response->steps as $step) {
+            $results = [];
+
+            foreach ($step->toolResults as $toolResult) {
+                /** @var ToolResult $toolResult */
+                $results[$toolResult->toolCallId] = $toolResult;
+            }
+
             foreach ($step->toolCalls as $toolCall) {
                 /** @var ToolCall $toolCall */
-                $toolCalls[] = [
-                    'name' => $toolCall->name,
-                    'arguments' => $toolCall->arguments(),
-                ];
+                $toolResult = $results[$toolCall->id] ?? null;
+
+                $toolCalls[] = $toolResult === null
+                    ? $this->toolCallOutcome($toolCall->name, $toolCall->arguments())
+                    : $this->toolCallOutcome($toolCall->name, $toolCall->arguments(), $toolResult->result, true);
             }
         }
 
@@ -150,5 +201,42 @@ class PrismEngine implements StreamingAgentEngine
             ],
             finishReason: $response->finishReason->value,
         );
+    }
+
+    /**
+     * One tool call with what came of it. A call still waiting on its result has
+     * a null result and success. A tool that returned an ['error' => ...] payload
+     * counts as failed even though it ran, since that is how tools report failure.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array{name: string, arguments: array<string, mixed>, result: mixed, success: ?bool, error: ?string}
+     */
+    protected function toolCallOutcome(
+        string $name,
+        array $arguments,
+        mixed $result = null,
+        ?bool $success = null,
+        ?string $error = null,
+    ): array {
+        if (is_string($result)) {
+            $decoded = json_decode($result, true);
+            $result = is_array($decoded) ? $decoded : $result;
+        }
+
+        $reported = is_array($result) && array_keys($result) === ['error'] && is_string($result['error'])
+            ? $result['error']
+            : null;
+
+        if ($success !== null && $reported !== null) {
+            $success = false;
+        }
+
+        return [
+            'name' => $name,
+            'arguments' => $arguments,
+            'result' => $result,
+            'success' => $success,
+            'error' => $error ?? $reported,
+        ];
     }
 }

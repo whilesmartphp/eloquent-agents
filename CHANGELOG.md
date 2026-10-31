@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+- A streamed run now reports what each tool returned, whether it succeeded and why it failed, along with the start of each step and any error the provider raises. Callers can show a tool's outcome as it happens instead of only the fact that it was called.
+- Every recorded tool call carries its result and success alongside its name and arguments, for streamed and buffered runs alike. A tool reports failure by returning an `error` payload. Existing keys are unchanged.
+- Token usage of a streamed run is summed over every usage report in the stream rather than taken from the last one.
+
 ## [1.2.0] - 2026-08-18
 
 - Buffered and streamed harness runs publish a provider-neutral completion event with the resolved request and result, allowing metrics integrations to observe usage without depending on Prism.

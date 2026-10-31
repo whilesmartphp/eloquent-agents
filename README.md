@@ -253,6 +253,42 @@ class FinanceHarness extends AbstractHarness
 at `resources/vendor/agents/prompts/{name}.md`, then the package default. A value that matches no prompt is
 used as literal text.
 
+## Streaming
+
+`Agents::stream()` runs a harness and hands each step of its progress to a callback, then returns the
+same `AgentResult` a buffered run would:
+
+```php
+use Whilesmart\Agents\Enums\StreamEventType;
+use Whilesmart\Agents\ValueObjects\AgentStreamEvent;
+
+$result = Agents::stream('assistant', $input, $context, function (AgentStreamEvent $event) {
+    if ($event->type === StreamEventType::ToolResult) {
+        logger()->info('tool finished', [
+            'tool' => $event->toolName,
+            'success' => $event->success,
+            'result' => $event->result,
+        ]);
+    }
+});
+```
+
+| Type | Fields |
+|------|--------|
+| `text_delta`, `thinking` | `text` |
+| `tool_call` | `toolName`, `arguments`, `toolCallId` |
+| `tool_result` | `toolName`, `arguments`, `toolCallId`, `result`, `success`, `error` |
+| `step_start`, `step_finish` | none |
+| `error` | `error` (the message), `errorType`, `recoverable` |
+
+An error the provider cannot recover from ends the stream. The run fails when nothing was produced before
+it, and otherwise keeps the partial answer with `finishReason` set to `error`.
+
+Each entry of `$result->toolCalls` records the call and what came of it, for streamed and buffered runs
+alike: `name`, `arguments`, `result`, `success` and `error`. A tool reports failure by returning
+`['error' => 'what went wrong']`; the model reads that payload, and the outcome is marked unsuccessful.
+Token usage is summed over every usage report the stream carries.
+
 ## MCP tools
 
 ```php

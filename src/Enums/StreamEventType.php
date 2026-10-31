@@ -13,5 +13,7 @@ enum StreamEventType: string
     case Thinking = 'thinking';
     case ToolCall = 'tool_call';
     case ToolResult = 'tool_result';
+    case StepStart = 'step_start';
     case StepFinish = 'step_finish';
+    case Error = 'error';
 }

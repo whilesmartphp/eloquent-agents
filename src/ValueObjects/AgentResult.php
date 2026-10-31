@@ -9,7 +9,7 @@ namespace Whilesmart\Agents\ValueObjects;
 final readonly class AgentResult
 {
     /**
-     * @param  array<int, array{name: string, arguments: array<string, mixed>}>  $toolCalls
+     * @param  array<int, array{name: string, arguments: array<string, mixed>, result?: mixed, success?: ?bool, error?: ?string}>  $toolCalls
      * @param  array{prompt_tokens: int, completion_tokens: int}  $usage
      */
     public function __construct(
@@ -23,7 +23,7 @@ final readonly class AgentResult
     ) {}
 
     /**
-     * @param  array<int, array{name: string, arguments: array<string, mixed>}>  $toolCalls
+     * @param  array<int, array{name: string, arguments: array<string, mixed>, result?: mixed, success?: ?bool, error?: ?string}>  $toolCalls
      * @param  array{prompt_tokens: int, completion_tokens: int}  $usage
      */
     public static function success(
