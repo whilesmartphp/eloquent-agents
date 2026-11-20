@@ -1,5 +1,8 @@
 <?php
 
+use Whilesmart\Agents\Sources\ConfigAgentSource;
+use Whilesmart\Agents\Sources\FileAgentSource;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -118,6 +121,29 @@ return [
         //     'tools' => ['clock', 'calculator', 'eloquent.query'],
         //     'max_steps' => 5,
         // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Agent sources
+    |--------------------------------------------------------------------------
+    |
+    | Where agent definitions are loaded from. ConfigAgentSource reads the
+    | inline agents below. FileAgentSource reads one agent per .json, .yaml or
+    | .yml file in each of the paths below; YAML requires symfony/yaml. Add a
+    | class implementing Whilesmart\Agents\Contracts\AgentSource to load
+    | agents from anywhere else. An agent name may only be defined once.
+    |
+    */
+    'agents' => [],
+
+    'sources' => [
+        ConfigAgentSource::class,
+        FileAgentSource::class,
+    ],
+
+    'paths' => [
+        // base_path('agents'),
     ],
 
     /*
