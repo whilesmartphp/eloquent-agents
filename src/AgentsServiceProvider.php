@@ -7,12 +7,15 @@ use Whilesmart\Agents\Contracts\AgentEngine;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Engines\Prism\PrismEngine;
 use Whilesmart\Agents\Engines\Prism\PrismToolAdapter;
+use Whilesmart\Agents\Exceptions\InvalidAgentDefinition;
 use Whilesmart\Agents\Prompts\PromptRegistry;
+use Whilesmart\Agents\Registries\AgentRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ModelResourceRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
 use Whilesmart\Agents\Resources\ResourceScope;
 use Whilesmart\Agents\Tools\ListResourceTool;
+use Whilesmart\Agents\ValueObjects\AgentDefinition;
 
 class AgentsServiceProvider extends ServiceProvider
 {
@@ -40,6 +43,7 @@ class AgentsServiceProvider extends ServiceProvider
         $this->app->singleton(PrismToolAdapter::class);
         $this->app->bind(AgentEngine::class, PrismEngine::class);
 
+        $this->app->singleton(AgentRegistry::class);
         $this->app->singleton(ToolRegistry::class);
         $this->app->bind(ToolResolver::class, fn ($app) => $app->make(ToolRegistry::class));
         $this->app->singleton(PromptRegistry::class);
@@ -54,6 +58,7 @@ class AgentsServiceProvider extends ServiceProvider
         $this->app->singleton('agents', fn ($app) => new AgentManager(
             $app->make(ToolRegistry::class),
             $app->make(HarnessRegistry::class),
+            $app->make(AgentRegistry::class),
         ));
         $this->app->alias('agents', AgentManager::class);
     }
@@ -63,6 +68,7 @@ class AgentsServiceProvider extends ServiceProvider
         $this->registerConfiguredResources();
         $this->registerConfiguredTools();
         $this->registerConfiguredHarnesses();
+        $this->registerConfiguredAgents();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -132,6 +138,21 @@ class AgentsServiceProvider extends ServiceProvider
 
         foreach ((array) config('agents.harnesses', []) as $name => $definition) {
             $registry->register($name, $definition);
+        }
+    }
+
+    protected function registerConfiguredAgents(): void
+    {
+        $registry = $this->app->make(AgentRegistry::class);
+
+        foreach ((array) config('agents.sources', []) as $source) {
+            foreach ($this->app->make($source)->definitions() as $name => $definition) {
+                if (! is_array($definition) && ! $definition instanceof AgentDefinition) {
+                    throw InvalidAgentDefinition::invalid($name, 'expected an array or AgentDefinition');
+                }
+
+                $registry->register($name, $definition);
+            }
         }
     }
 }

@@ -1,0 +1,8 @@
+{
+    "name": "support-desk",
+    "type": "assistant",
+    "label": "Support desk",
+    "provider": "openai",
+    "model": "gpt-test",
+    "model_version": "2026-11-01"
+}

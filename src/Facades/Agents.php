@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Facade;
 use Whilesmart\Agents\AgentManager;
 
 /**
+ * @method static \Whilesmart\Agents\Registries\AgentRegistry agents()
+ * @method static \Whilesmart\Agents\ValueObjects\AgentDefinition agent(string $name)
+ * @method static \Whilesmart\Agents\ValueObjects\AgentResult runAgent(string $name, string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, array $media = [])
  * @method static \Whilesmart\Agents\Contracts\Harness harness(string $name)
  * @method static \Whilesmart\Agents\ValueObjects\AgentResult run(string $harness, string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, array $media = [], array $overrides = [])
  * @method static \Whilesmart\Agents\AgentManager registerTool(\Whilesmart\Agents\Contracts\Tool|string $tool)
