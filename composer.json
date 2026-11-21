@@ -19,7 +19,8 @@
     "orchestra/testbench": "^9.0|^10.0",
     "nunomaduro/collision": "^8.0",
     "laravel/pint": "^1.0",
-    "fakerphp/faker": "^1.24"
+    "fakerphp/faker": "^1.24",
+    "symfony/yaml": "^6.0|^7.0"
   },
   "autoload": {
     "psr-4": {
@@ -52,5 +53,8 @@
     "sort-packages": true
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "suggest": {
+    "symfony/yaml": "Read agent definitions from YAML files."
+  }
 }

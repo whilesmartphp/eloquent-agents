@@ -247,6 +247,25 @@ class FinanceHarness extends AbstractHarness
 
 `Agents::registerHarness('finance', FinanceHarness::class)`.
 
+## Agent sources
+
+An agent identifies who acted. A harness defines how to run a model, including its prompt and tools. Set an agent’s optional `harness` to a name from `agents.harnesses` to run it with `Agents::runAgent($name, $input, $context)` using the agent’s provider and model. Omit it for an external agent that calls your API with its own credential.
+
+Define agents by name in `agents.agents`, or put one JSON or YAML file per agent in the folders listed in `agents.paths`. The file name supplies the name unless the file sets `name`. YAML requires `symfony/yaml`.
+
+```yaml
+name: invoice-reviewer
+type: reviewer
+label: Invoice reviewer
+provider: openai
+model: gpt-4.1
+model_version: "2026-11-01"
+harness: finance
+department: billing
+```
+
+Read host keys through `Agents::agent('invoice-reviewer')->attributes['department']`. Use `Agents::agents()->ofType('reviewer')` to list matching names. To load identities from another catalogue, add a class implementing `Whilesmart\Agents\Contracts\AgentSource` to `agents.sources`. Names must be unique across sources.
+
 ## Overriding prompts
 
 `run()` resolves a harness prompt by name in this order: `config('agents.prompts.{name}')`, a published file

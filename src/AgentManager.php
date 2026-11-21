@@ -3,11 +3,14 @@
 namespace Whilesmart\Agents;
 
 use Closure;
+use LogicException;
 use Whilesmart\Agents\Contracts\Harness;
 use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
+use Whilesmart\Agents\Registries\AgentRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
+use Whilesmart\Agents\ValueObjects\AgentDefinition;
 use Whilesmart\Agents\ValueObjects\AgentResult;
 use Whilesmart\Agents\ValueObjects\AgentStreamEvent;
 use Whilesmart\Agents\ValueObjects\ToolContext;
@@ -21,7 +24,32 @@ class AgentManager
     public function __construct(
         protected ToolRegistry $tools,
         protected HarnessRegistry $harnesses,
+        protected AgentRegistry $agents = new AgentRegistry,
     ) {}
+
+    public function agents(): AgentRegistry
+    {
+        return $this->agents;
+    }
+
+    public function agent(string $name): AgentDefinition
+    {
+        return $this->agents->get($name);
+    }
+
+    public function runAgent(string $name, string $input, ToolContext $context, array $media = []): AgentResult
+    {
+        $agent = $this->agent($name);
+
+        if ($agent->harness === null) {
+            throw new LogicException("Agent [{$name}] cannot run because it has no harness.");
+        }
+
+        return $this->run($agent->harness, $input, $context, $media, array_filter([
+            'provider' => $agent->provider,
+            'model' => $agent->model,
+        ], fn ($value) => $value !== null));
+    }
 
     public function harness(string $name): Harness
     {

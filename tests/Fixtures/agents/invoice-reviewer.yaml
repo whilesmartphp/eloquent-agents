@@ -1,0 +1,7 @@
+type: reviewer
+label: Invoice reviewer
+provider: openai
+model: gpt-test
+model_version: "2026-11-01"
+harness: echo
+department: billing
