@@ -4,10 +4,12 @@ namespace Whilesmart\Agents;
 
 use Illuminate\Support\ServiceProvider;
 use Whilesmart\Agents\Contracts\AgentEngine;
+use Whilesmart\Agents\Contracts\RunGuard;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Engines\Prism\PrismEngine;
 use Whilesmart\Agents\Engines\Prism\PrismToolAdapter;
 use Whilesmart\Agents\Exceptions\InvalidAgentDefinition;
+use Whilesmart\Agents\Guards\AllowAllRuns;
 use Whilesmart\Agents\Prompts\PromptRegistry;
 use Whilesmart\Agents\Registries\AgentRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
@@ -42,6 +44,7 @@ class AgentsServiceProvider extends ServiceProvider
 
         $this->app->singleton(PrismToolAdapter::class);
         $this->app->bind(AgentEngine::class, PrismEngine::class);
+        $this->app->bindIf(RunGuard::class, AllowAllRuns::class);
 
         $this->app->singleton(AgentRegistry::class);
         $this->app->singleton(ToolRegistry::class);

@@ -61,6 +61,57 @@ Every buffered or streamed run through `AbstractHarness` dispatches an
 `AgentRunCompleted` event with the harness name, resolved request, and result.
 Metrics packages can observe runs without depending on Prism types.
 
+### Single model calls
+
+For a call that needs no tools and no harness (classifying a message, titling a
+chat, turning text into JSON), use `complete()`. It runs one model call through
+the same engine, guard and completion event as a harness run.
+
+```php
+$result = Agents::complete($question, ToolContext::forUser($user), [
+    'name' => 'router.classify',      // reported as the event's harness name
+    'system' => 'Answer with one word: data, general or agent.',
+    'temperature' => 0,
+    // optional: provider, model, maxTokens, media
+]);
+```
+
+### Metering and limits
+
+Bind a `RunGuard` to sit around every run: harness runs, streamed runs and
+single calls. Throw to refuse a run before the model is called. Pass a
+changed request to `$next` to tighten it. Read `$result->usage` afterwards to
+record what the run spent; it reports prompt, completion, cache write, cache
+read and thought tokens.
+
+```php
+use Whilesmart\Agents\Contracts\RunGuard;
+
+class AllowanceGuard implements RunGuard
+{
+    public function handle(string $name, AgentRequest $request, Closure $next): AgentResult
+    {
+        $owner = $request->context->user;
+
+        if ($this->allowance->remaining($owner) <= 0) {
+            throw new AllowanceUsedUp;
+        }
+
+        $result = $next($request->with(maxTokens: min($request->maxTokens ?? 4096, 4096)));
+        $this->allowance->record($owner, $request->provider, $request->model, $result->usage);
+
+        return $result;
+    }
+}
+
+// a service provider
+$this->app->bind(RunGuard::class, AllowanceGuard::class);
+```
+
+The guard checks once per run. A run that takes several tool steps is checked
+before its first step and recorded after its last, so `maxSteps` and
+`maxTokens` bound how far one run can go past an allowance.
+
 ## Built-in tools
 
 | Name | Permission | What it does |

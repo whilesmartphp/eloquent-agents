@@ -26,4 +26,12 @@ final readonly class AgentRequest
         public array $media = [],
         public ?int $maxTokens = null,
     ) {}
+
+    /**
+     * A copy with the named properties replaced, e.g. with(maxTokens: 1024).
+     */
+    public function with(mixed ...$changes): self
+    {
+        return new self(...array_merge(get_object_vars($this), $changes));
+    }
 }
