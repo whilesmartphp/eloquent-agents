@@ -4,13 +4,17 @@ namespace Whilesmart\Agents;
 
 use Closure;
 use LogicException;
+use Whilesmart\Agents\Contracts\AgentEngine;
 use Whilesmart\Agents\Contracts\Harness;
+use Whilesmart\Agents\Contracts\RunGuard;
 use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
+use Whilesmart\Agents\Events\AgentRunCompleted;
 use Whilesmart\Agents\Registries\AgentRegistry;
 use Whilesmart\Agents\Registries\HarnessRegistry;
 use Whilesmart\Agents\Registries\ToolRegistry;
 use Whilesmart\Agents\ValueObjects\AgentDefinition;
+use Whilesmart\Agents\ValueObjects\AgentRequest;
 use Whilesmart\Agents\ValueObjects\AgentResult;
 use Whilesmart\Agents\ValueObjects\AgentStreamEvent;
 use Whilesmart\Agents\ValueObjects\ToolContext;
@@ -82,6 +86,40 @@ class AgentManager
         }
 
         return $resolved->stream($input, $context, $onEvent, $media, $overrides);
+    }
+
+    /**
+     * One model call with no tools and no harness: classify, summarise,
+     * extract. It passes through the bound RunGuard and publishes the same
+     * completion event as a harness run, so it is metered the same way.
+     *
+     * @param  array{name?: string, system?: string, provider?: string, model?: string, temperature?: float, maxTokens?: int, media?: array<int, mixed>}  $options
+     */
+    public function complete(string $input, ToolContext $context, array $options = []): AgentResult
+    {
+        $name = $options['name'] ?? 'completion';
+        $request = new AgentRequest(
+            systemPrompt: $options['system'] ?? '',
+            input: $input,
+            tools: [],
+            context: $context,
+            provider: $options['provider'] ?? config('agents.provider'),
+            model: $options['model'] ?? config('agents.model'),
+            temperature: $options['temperature'] ?? (float) config('agents.temperature'),
+            maxSteps: 1,
+            media: $options['media'] ?? [],
+            maxTokens: $options['maxTokens'] ?? config('agents.max_tokens'),
+        );
+
+        $result = app(RunGuard::class)->handle($name, $request, function (AgentRequest $guarded) use (&$request) {
+            $request = $guarded;
+
+            return app(AgentEngine::class)->run($guarded);
+        });
+
+        AgentRunCompleted::dispatch($name, $request, $result);
+
+        return $result;
     }
 
     /**

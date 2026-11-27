@@ -3,6 +3,7 @@
 namespace Whilesmart\Agents\Harness;
 
 use Whilesmart\Agents\Contracts\AgentEngine;
+use Whilesmart\Agents\Contracts\RunGuard;
 use Whilesmart\Agents\Contracts\StreamingAgentEngine;
 use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
@@ -65,7 +66,11 @@ abstract class AbstractHarness implements StreamingHarness
     public function run(string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
         $request = $this->buildRequest($input, $context, $media, $overrides);
-        $result = $this->engine->run($request);
+        $result = app(RunGuard::class)->handle($this->name(), $request, function (AgentRequest $guarded) use (&$request) {
+            $request = $guarded;
+
+            return $this->engine->run($guarded);
+        });
 
         AgentRunCompleted::dispatch($this->name(), $request, $result);
 
@@ -76,13 +81,15 @@ abstract class AbstractHarness implements StreamingHarness
     {
         $request = $this->buildRequest($input, $context, $media, $overrides);
 
-        // Fall back to a buffered run when the engine cannot stream, so callers
-        // can always reach for stream() regardless of the configured engine.
-        if (! $this->engine instanceof StreamingAgentEngine) {
-            $result = $this->engine->run($request);
-        } else {
-            $result = $this->engine->stream($request, $onEvent);
-        }
+        $result = app(RunGuard::class)->handle($this->name(), $request, function (AgentRequest $guarded) use (&$request, $onEvent) {
+            $request = $guarded;
+
+            // Fall back to a buffered run when the engine cannot stream, so callers
+            // can always reach for stream() regardless of the configured engine.
+            return $this->engine instanceof StreamingAgentEngine
+                ? $this->engine->stream($guarded, $onEvent)
+                : $this->engine->run($guarded);
+        });
 
         AgentRunCompleted::dispatch($this->name(), $request, $result);
 
