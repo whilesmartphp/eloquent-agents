@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0] - 2026-11-27
+
+- Agents can be defined in files or config and loaded from configurable sources, so an application declares an agent without a database table.
+- `Agents::complete()` makes one model call with no tools or harness. Applications no longer need to call Prism directly to classify, title or extract, and those calls are metered like any other run.
+- A bound `RunGuard` wraps every run, buffered, streamed or single. It can refuse a run before the model is called, tighten the request, and record usage, so applications no longer extend the Prism engine or request to meter model calls.
+- Run usage reports cache write, cache read and thought tokens alongside prompt and completion tokens, so providers that bill for them can be metered exactly. A stream that fails after reporting usage keeps that usage on the failed result.
+
+## [1.2.0] - 2026-08-18
+
+- Buffered and streamed harness runs publish a provider-neutral completion event with the resolved request and result, allowing metrics integrations to observe usage without depending on Prism.
+
 ## [1.1.0] - 2026-07-29
 - A model can describe itself to agents once, and that single declaration drives its read tool, the fields a write tool accepts, and an exportable semantic-layer schema. Previously each of the three was maintained by hand, and they drifted apart silently.
 - Ownership is declared rather than reimplemented per tool, covering a polymorphic owner that needs its type pinned and a record owned only through its parent. Every path fails closed: a model that is neither owned nor explicitly global returns nothing rather than everyone's rows, and a model absent from the configured list stays invisible however it describes itself.

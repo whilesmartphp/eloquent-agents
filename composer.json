@@ -3,7 +3,7 @@
   "description": "AI tool-calling foundation for Laravel: ready-made tools, an agent harness, and an extension API on top of Prism",
   "type": "library",
   "license": "MIT",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "authors": [
     {
       "name": "WhileSmart",
@@ -19,7 +19,8 @@
     "orchestra/testbench": "^9.0|^10.0",
     "nunomaduro/collision": "^8.0",
     "laravel/pint": "^1.0",
-    "fakerphp/faker": "^1.24"
+    "fakerphp/faker": "^1.24",
+    "symfony/yaml": "^6.0|^7.0"
   },
   "autoload": {
     "psr-4": {
@@ -46,8 +47,14 @@
     "pint:test": "./vendor/bin/pint --test"
   },
   "config": {
+    "platform": {
+      "php": "8.2"
+    },
     "sort-packages": true
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "suggest": {
+    "symfony/yaml": "Read agent definitions from YAML files."
+  }
 }

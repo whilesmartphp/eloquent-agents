@@ -3,11 +3,13 @@
 namespace Whilesmart\Agents\Harness;
 
 use Whilesmart\Agents\Contracts\AgentEngine;
+use Whilesmart\Agents\Contracts\RunGuard;
 use Whilesmart\Agents\Contracts\StreamingAgentEngine;
 use Whilesmart\Agents\Contracts\StreamingHarness;
 use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\Contracts\ToolResolver;
 use Whilesmart\Agents\Enums\ToolPermission;
+use Whilesmart\Agents\Events\AgentRunCompleted;
 use Whilesmart\Agents\ValueObjects\AgentRequest;
 use Whilesmart\Agents\ValueObjects\AgentResult;
 use Whilesmart\Agents\ValueObjects\ToolContext;
@@ -63,20 +65,35 @@ abstract class AbstractHarness implements StreamingHarness
 
     public function run(string $input, ToolContext $context, array $media = [], array $overrides = []): AgentResult
     {
-        return $this->engine->run($this->buildRequest($input, $context, $media, $overrides));
+        $request = $this->buildRequest($input, $context, $media, $overrides);
+        $result = app(RunGuard::class)->handle($this->name(), $request, function (AgentRequest $guarded) use (&$request) {
+            $request = $guarded;
+
+            return $this->engine->run($guarded);
+        });
+
+        AgentRunCompleted::dispatch($this->name(), $request, $result);
+
+        return $result;
     }
 
     public function stream(string $input, ToolContext $context, callable $onEvent, array $media = [], array $overrides = []): AgentResult
     {
         $request = $this->buildRequest($input, $context, $media, $overrides);
 
-        // Fall back to a buffered run when the engine cannot stream, so callers
-        // can always reach for stream() regardless of the configured engine.
-        if (! $this->engine instanceof StreamingAgentEngine) {
-            return $this->engine->run($request);
-        }
+        $result = app(RunGuard::class)->handle($this->name(), $request, function (AgentRequest $guarded) use (&$request, $onEvent) {
+            $request = $guarded;
 
-        return $this->engine->stream($request, $onEvent);
+            // Fall back to a buffered run when the engine cannot stream, so callers
+            // can always reach for stream() regardless of the configured engine.
+            return $this->engine instanceof StreamingAgentEngine
+                ? $this->engine->stream($guarded, $onEvent)
+                : $this->engine->run($guarded);
+        });
+
+        AgentRunCompleted::dispatch($this->name(), $request, $result);
+
+        return $result;
     }
 
     /**

@@ -12,6 +12,7 @@ use Prism\Prism\Text\PendingRequest;
 use Prism\Prism\Text\Response;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\ToolCall;
+use Prism\Prism\ValueObjects\Usage;
 use Whilesmart\Agents\Contracts\StreamingAgentEngine;
 use Whilesmart\Agents\Contracts\Tool;
 use Whilesmart\Agents\ValueObjects\AgentRequest;
@@ -42,7 +43,7 @@ class PrismEngine implements StreamingAgentEngine
     {
         $text = '';
         $toolCalls = [];
-        $usage = ['prompt_tokens' => 0, 'completion_tokens' => 0];
+        $usage = AgentResult::NO_USAGE;
         $steps = 0;
         $finishReason = 'stop';
 
@@ -61,10 +62,7 @@ class PrismEngine implements StreamingAgentEngine
                     $onEvent(AgentStreamEvent::stepFinish());
                 } elseif ($event instanceof StreamEndEvent) {
                     if ($event->usage !== null) {
-                        $usage = [
-                            'prompt_tokens' => $event->usage->promptTokens,
-                            'completion_tokens' => $event->usage->completionTokens,
-                        ];
+                        $usage = $this->toUsage($event->usage);
                     }
                     $finishReason = $event->finishReason->value;
                 }
@@ -73,7 +71,7 @@ class PrismEngine implements StreamingAgentEngine
             // Keep whatever was produced before the stream broke: a partial
             // answer is more useful than discarding the whole turn.
             if (trim($text) === '' && $toolCalls === []) {
-                return AgentResult::failed($e->getMessage());
+                return AgentResult::failed($e->getMessage(), $usage);
             }
 
             $finishReason = 'error';
@@ -97,8 +95,11 @@ class PrismEngine implements StreamingAgentEngine
 
         $text = Prism::text()
             ->using($request->provider, $request->model)
-            ->withSystemPrompt($request->systemPrompt)
             ->withMaxSteps($request->maxSteps);
+
+        if ($request->systemPrompt !== '') {
+            $text = $text->withSystemPrompt($request->systemPrompt);
+        }
 
         // Multimodal input (images, documents, audio, video) must travel as a
         // UserMessage with media; withPrompt() is text-only and would drop it.
@@ -144,11 +145,22 @@ class PrismEngine implements StreamingAgentEngine
             text: $response->text,
             steps: $response->steps->count(),
             toolCalls: $toolCalls,
-            usage: [
-                'prompt_tokens' => $response->usage->promptTokens,
-                'completion_tokens' => $response->usage->completionTokens,
-            ],
+            usage: $this->toUsage($response->usage),
             finishReason: $response->finishReason->value,
         );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function toUsage(Usage $usage): array
+    {
+        return [
+            'prompt_tokens' => $usage->promptTokens,
+            'completion_tokens' => $usage->completionTokens,
+            'cache_write_input_tokens' => $usage->cacheWriteInputTokens ?? 0,
+            'cache_read_input_tokens' => $usage->cacheReadInputTokens ?? 0,
+            'thought_tokens' => $usage->thoughtTokens ?? 0,
+        ];
     }
 }

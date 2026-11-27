@@ -6,8 +6,13 @@ use Illuminate\Support\Facades\Facade;
 use Whilesmart\Agents\AgentManager;
 
 /**
+ * @method static \Whilesmart\Agents\Registries\AgentRegistry agents()
+ * @method static \Whilesmart\Agents\ValueObjects\AgentDefinition agent(string $name)
+ * @method static \Whilesmart\Agents\ValueObjects\AgentResult runAgent(string $name, string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, array $media = [])
  * @method static \Whilesmart\Agents\Contracts\Harness harness(string $name)
  * @method static \Whilesmart\Agents\ValueObjects\AgentResult run(string $harness, string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, array $media = [], array $overrides = [])
+ * @method static \Whilesmart\Agents\ValueObjects\AgentResult stream(string $harness, string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, callable $onEvent, array $media = [], array $overrides = [])
+ * @method static \Whilesmart\Agents\ValueObjects\AgentResult complete(string $input, \Whilesmart\Agents\ValueObjects\ToolContext $context, array $options = [])
  * @method static \Whilesmart\Agents\AgentManager registerTool(\Whilesmart\Agents\Contracts\Tool|string $tool)
  * @method static \Whilesmart\Agents\AgentManager extendTool(string $name, \Closure|\Whilesmart\Agents\Contracts\Tool $tool)
  * @method static \Whilesmart\Agents\AgentManager registerHarness(string $name, \Whilesmart\Agents\Contracts\Harness|array|string $harness)
